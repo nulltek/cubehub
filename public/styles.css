@@ -657,6 +657,40 @@ body.is-timer-page {
 
 .auth-card {
   width: min(560px, 100%);
+  gap: 18px;
+  padding: clamp(18px, 3vw, 26px);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(216, 255, 95, 0.1), transparent 34%),
+    rgba(245, 241, 232, 0.055);
+}
+
+.auth-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.05;
+}
+
+.auth-card p {
+  max-width: 480px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.google-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 54px;
+}
+
+.google-button svg {
+  width: 22px;
+  height: 22px;
+  color: #15170f;
+  flex: 0 0 auto;
 }
 
 .auth-card label,
