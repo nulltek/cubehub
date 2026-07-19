@@ -29,6 +29,7 @@ const dockStatsEl = document.querySelector("#dockStats");
 const dockReviewsEl = document.querySelector("#dockReviews");
 const dockRoomsEl = document.querySelector("#dockRooms");
 const dockAlgorithmsEl = document.querySelector("#dockAlgorithms");
+const dockCompetitionsEl = document.querySelector("#dockCompetitions");
 const dockSettingsEl = document.querySelector("#dockSettings");
 const homeViewEl = document.querySelector("#homeView");
 const timerViewEl = document.querySelector("#timerView");
@@ -37,6 +38,7 @@ const homeTimerCardEl = document.querySelector("#homeTimerCard");
 const homeReviewsCardEl = document.querySelector("#homeReviewsCard");
 const homeRoomsCardEl = document.querySelector("#homeRoomsCard");
 const homeAlgorithmsCardEl = document.querySelector("#homeAlgorithmsCard");
+const homeCompetitionsCardEl = document.querySelector("#homeCompetitionsCard");
 const timesViewEl = document.querySelector("#timesView");
 const backToTimerEl = document.querySelector("#backToTimer");
 const timesScreenTitleEl = document.querySelector("#timesScreenTitle");
@@ -52,6 +54,7 @@ const prGridEl = document.querySelector("#prGrid");
 const reviewsViewEl = document.querySelector("#reviewsView");
 const roomsViewEl = document.querySelector("#roomsView");
 const algorithmsViewEl = document.querySelector("#algorithmsView");
+const competitionsViewEl = document.querySelector("#competitionsView");
 const settingsViewEl = document.querySelector("#settingsView");
 const settingsTitleEl = document.querySelector("#settingsTitle");
 const settingsCopyEl = document.querySelector("#settingsCopy");
@@ -77,6 +80,7 @@ const profilePrsEl = document.querySelector("#profilePrs");
 
 const storageKey = "cube-timer-solves-v1";
 const settingsKey = "cube-timer-settings-v2";
+const underDevelopmentViews = new Set(["reviews", "rooms", "algorithms", "competitions"]);
 const events = [
   { id: "222", label: "2x2" },
   { id: "333", label: "3x3" },
@@ -221,12 +225,14 @@ dockTimerEl.addEventListener("click", () => navigateFeature("timer"));
 dockReviewsEl.addEventListener("click", () => navigateFeature("reviews"));
 dockRoomsEl.addEventListener("click", () => navigateFeature("rooms"));
 dockAlgorithmsEl.addEventListener("click", () => navigateFeature("algorithms"));
+dockCompetitionsEl.addEventListener("click", () => navigateFeature("competitions"));
 dockSettingsEl.addEventListener("click", () => currentView === "home" ? navigateFeature("account") : openTimerSettings());
 homeStartButtonEl.addEventListener("click", () => navigateFeature("timer"));
 homeTimerCardEl.addEventListener("click", () => navigateFeature("timer"));
 homeReviewsCardEl.addEventListener("click", () => navigateFeature("reviews"));
 homeRoomsCardEl.addEventListener("click", () => navigateFeature("rooms"));
 homeAlgorithmsCardEl.addEventListener("click", () => navigateFeature("algorithms"));
+homeCompetitionsCardEl.addEventListener("click", () => navigateFeature("competitions"));
 backToTimerEl.addEventListener("click", () => setView("timer"));
 closeProfileEl.addEventListener("click", () => profileModalEl.classList.add("hidden"));
 for (const input of [holdDurationInputEl, inspectionToggleEl, blindInspectionToggleEl, inspectionDirectionSelectEl, displayModeSelectEl, beepToggleEl, inputModeSelectEl]) {
@@ -496,6 +502,7 @@ function setView(view) {
   const reviews = view === "reviews";
   const rooms = view === "rooms";
   const algorithms = view === "algorithms";
+  const competitions = view === "competitions";
   const settingsView = view === "settings";
   currentView = view;
   homeViewEl.classList.toggle("hidden", !home);
@@ -506,12 +513,14 @@ function setView(view) {
   reviewsViewEl.classList.toggle("hidden", !reviews);
   roomsViewEl.classList.toggle("hidden", !rooms);
   algorithmsViewEl.classList.toggle("hidden", !algorithms);
+  competitionsViewEl.classList.toggle("hidden", !competitions);
   settingsViewEl.classList.toggle("hidden", !settingsView);
   dockHomeEl.classList.toggle("is-active", home);
   dockTimesEl.classList.toggle("is-active", times || !historyPanelEl.classList.contains("closed"));
   dockReviewsEl.classList.toggle("is-active", reviews);
   dockRoomsEl.classList.toggle("is-active", rooms);
   dockAlgorithmsEl.classList.toggle("is-active", algorithms);
+  dockCompetitionsEl.classList.toggle("is-active", competitions);
   dockSettingsEl.classList.toggle("is-active", settingsView || accountView);
   document.body.classList.toggle("is-home", home);
   document.body.classList.toggle("is-timer", timer || times || settingsView);
@@ -526,7 +535,6 @@ function setView(view) {
     solveDetailEl.classList.add("hidden");
   }
   if (timer) applyInputMode();
-  if (rooms) renderRooms();
 }
 
 function openTimerSettings() {
@@ -537,6 +545,10 @@ function openTimerSettings() {
 }
 
 function navigateFeature(view) {
+  if (underDevelopmentViews.has(view)) {
+    setView(view);
+    return;
+  }
   if (!requireAuth(view)) return;
   setView(view);
 }
