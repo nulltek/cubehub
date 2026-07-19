@@ -177,6 +177,49 @@
       </section>
     </main>
 
+    <main class="hub-page hidden" id="timerStatsView" aria-label="Timer statistics page">
+      <nav class="top-nav page-nav" aria-label="Timer statistics">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+        <button class="ghost-button" id="backToTimerFromStats" type="button">Timer</button>
+      </nav>
+      <section class="stats-workspace">
+        <div class="stats-head">
+          <div>
+            <span class="panel-kicker" id="statsEventName">3x3 statistics</span>
+            <h1>Time graph</h1>
+          </div>
+          <label class="stats-select-wrap" for="statsSolveCount">
+            <span>Last solves</span>
+            <select id="statsSolveCount">
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="12" selected>12</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="300">300</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="2000">2000</option>
+            </select>
+          </label>
+        </div>
+        <div class="stats-graph-card">
+          <svg id="statsGraph" viewBox="0 0 720 300" role="img" aria-label="Solve time graph"></svg>
+          <div class="stats-graph-empty hidden" id="statsGraphEmpty">Add at least two valid solves for this event to draw a graph.</div>
+        </div>
+        <div class="stats-graph-summary" id="statsGraphSummary"></div>
+      </section>
+    </main>
+
     <main class="hub-page hidden" id="settingsView" aria-label="Settings page">
       <nav class="top-nav page-nav" aria-label="Settings">
         <a class="brand" href="/">

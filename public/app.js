@@ -55,7 +55,14 @@ const reviewsViewEl = document.querySelector("#reviewsView");
 const roomsViewEl = document.querySelector("#roomsView");
 const algorithmsViewEl = document.querySelector("#algorithmsView");
 const competitionsViewEl = document.querySelector("#competitionsView");
+const timerStatsViewEl = document.querySelector("#timerStatsView");
 const settingsViewEl = document.querySelector("#settingsView");
+const backToTimerFromStatsEl = document.querySelector("#backToTimerFromStats");
+const statsEventNameEl = document.querySelector("#statsEventName");
+const statsSolveCountEl = document.querySelector("#statsSolveCount");
+const statsGraphEl = document.querySelector("#statsGraph");
+const statsGraphEmptyEl = document.querySelector("#statsGraphEmpty");
+const statsGraphSummaryEl = document.querySelector("#statsGraphSummary");
 const settingsTitleEl = document.querySelector("#settingsTitle");
 const settingsCopyEl = document.querySelector("#settingsCopy");
 const holdDurationInputEl = document.querySelector("#holdDurationInput");
@@ -80,7 +87,9 @@ const profilePrsEl = document.querySelector("#profilePrs");
 
 const storageKey = "cube-timer-solves-v1";
 const settingsKey = "cube-timer-settings-v2";
+const statsCountKey = "cube-timer-stats-count-v1";
 const underDevelopmentViews = new Set(["reviews", "rooms", "algorithms", "competitions"]);
+const statsCountOptions = [3, 5, 12, 25, 50, 100, 200, 300, 500, 1000, 2000];
 const events = [
   { id: "222", label: "2x2" },
   { id: "333", label: "3x3" },
@@ -115,6 +124,7 @@ let currentEvent = localStorage.getItem("cube-timer-event-v1") || "333";
 if (!events.some((event) => event.id === currentEvent)) currentEvent = "333";
 let solves = loadSolves();
 let settings = loadSettings();
+let statsSolveCount = loadStatsSolveCount();
 let account = null;
 let currentView = "home";
 let intendedView = "home";
@@ -139,6 +149,7 @@ renderEventSelect();
 renderPrGrid();
 loadServerAccount();
 renderSettings();
+statsSolveCountEl.value = String(statsSolveCount);
 renderSolves();
 renderRooms();
 setPanel(!window.matchMedia("(max-width: 1180px)").matches);
@@ -217,8 +228,7 @@ dockImageEl.addEventListener("click", () => {
 });
 dockStatsEl.addEventListener("click", () => {
   if (!requireAuth("timer")) return;
-  setView("timer");
-  rollingStatsEl.focus?.();
+  setView(currentView === "stats" ? "timer" : "stats");
 });
 dockHomeEl.addEventListener("click", () => setView("home"));
 dockTimerEl.addEventListener("click", () => navigateFeature("timer"));
@@ -234,7 +244,14 @@ homeRoomsCardEl.addEventListener("click", () => navigateFeature("rooms"));
 homeAlgorithmsCardEl.addEventListener("click", () => navigateFeature("algorithms"));
 homeCompetitionsCardEl.addEventListener("click", () => navigateFeature("competitions"));
 backToTimerEl.addEventListener("click", () => setView("timer"));
+backToTimerFromStatsEl.addEventListener("click", () => setView("timer"));
 closeProfileEl.addEventListener("click", () => profileModalEl.classList.add("hidden"));
+statsSolveCountEl.addEventListener("change", () => {
+  statsSolveCount = Number.parseInt(statsSolveCountEl.value, 10);
+  if (!statsCountOptions.includes(statsSolveCount)) statsSolveCount = 12;
+  localStorage.setItem(statsCountKey, String(statsSolveCount));
+  renderStatsGraph();
+});
 for (const input of [holdDurationInputEl, inspectionToggleEl, blindInspectionToggleEl, inspectionDirectionSelectEl, displayModeSelectEl, beepToggleEl, inputModeSelectEl]) {
   input.addEventListener("change", saveSettingsFromForm);
 }
@@ -412,6 +429,7 @@ function renderSolves() {
   statsEl.innerHTML = statsMarkup;
   mobileStatsEl.innerHTML = statsMarkup;
   renderRollingStats(eventSolves);
+  renderStatsGraph(eventSolves);
 }
 
 function renderRollingStats(eventSolves = getEventSolves()) {
@@ -422,6 +440,75 @@ function renderRollingStats(eventSolves = getEventSolves()) {
     <div><span>${mo3 || "--"}</span><small>mo3</small></div>
     <div><span>${ao5 || "--"}</span><small>ao5</small></div>
     <div><span>${ao12 || "--"}</span><small>ao12</small></div>
+  `;
+}
+
+function renderStatsGraph(eventSolves = getEventSolves()) {
+  const event = getCurrentEvent();
+  const sample = eventSolves.slice(0, statsSolveCount).reverse();
+  const points = sample
+    .map((solve, index) => ({ solve, index, value: resultValue(solve) }))
+    .filter((point) => point.value !== Infinity && Number.isFinite(point.value));
+  const skipped = sample.length - points.length;
+  const unit = event.fmc ? "moves" : "time";
+  statsEventNameEl.textContent = `${event.label} statistics`;
+  statsGraphEl.innerHTML = "";
+  statsGraphEmptyEl.classList.toggle("hidden", points.length >= 2);
+
+  if (points.length < 2) {
+    statsGraphSummaryEl.innerHTML = `
+      <div><span>${sample.length}</span><small>selected solves</small></div>
+      <div><span>--</span><small>best</small></div>
+      <div><span>${skipped}</span><small>DNF skipped</small></div>
+    `;
+    return;
+  }
+
+  const width = 720;
+  const height = 300;
+  const pad = { left: 58, right: 24, top: 24, bottom: 42 };
+  const min = Math.min(...points.map((point) => point.value));
+  const max = Math.max(...points.map((point) => point.value));
+  const range = Math.max(1, max - min);
+  const xFor = (index) => {
+    const denominator = Math.max(1, sample.length - 1);
+    return pad.left + (index / denominator) * (width - pad.left - pad.right);
+  };
+  const yFor = (value) => pad.top + ((max - value) / range) * (height - pad.top - pad.bottom);
+  const polyline = points.map((point) => `${xFor(point.index).toFixed(2)},${yFor(point.value).toFixed(2)}`).join(" ");
+  const area = `${pad.left},${height - pad.bottom} ${polyline} ${xFor(points.at(-1).index).toFixed(2)},${height - pad.bottom}`;
+  const average = points.reduce((sum, point) => sum + point.value, 0) / points.length;
+  const best = points.reduce((lowest, point) => point.value < lowest.value ? point : lowest, points[0]);
+  const latest = points.at(-1);
+  const axisMax = event.fmc ? `${max} moves` : formatTime(max);
+  const axisMin = event.fmc ? `${min} moves` : formatTime(min);
+
+  statsGraphEl.innerHTML = `
+    <defs>
+      <linearGradient id="statsAreaFill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="rgba(216, 255, 95, 0.26)" />
+        <stop offset="100%" stop-color="rgba(216, 255, 95, 0.02)" />
+      </linearGradient>
+    </defs>
+    <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" class="graph-axis" />
+    <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}" class="graph-axis" />
+    <text x="16" y="${pad.top + 5}" class="graph-label">${axisMax}</text>
+    <text x="16" y="${height - pad.bottom + 5}" class="graph-label">${axisMin}</text>
+    <polygon points="${area}" class="graph-area" />
+    <polyline points="${polyline}" class="graph-line" />
+    ${points.map((point) => `
+      <circle cx="${xFor(point.index).toFixed(2)}" cy="${yFor(point.value).toFixed(2)}" r="${point === latest ? 5 : 3.5}" class="${point === best ? "graph-dot best" : "graph-dot"}">
+        <title>${formatSolveResult(point.solve)}</title>
+      </circle>
+    `).join("")}
+  `;
+
+  statsGraphSummaryEl.innerHTML = `
+    <div><span>${points.length}</span><small>valid ${unit}s graphed</small></div>
+    <div><span>${formatAverageValue(average, points[0].solve)}</span><small>mean</small></div>
+    <div><span>${formatSolveResult(best.solve)}</span><small>best</small></div>
+    <div><span>${formatSolveResult(latest.solve)}</span><small>latest</small></div>
+    <div><span>${skipped}</span><small>DNF skipped</small></div>
   `;
 }
 
@@ -499,6 +586,7 @@ function setView(view) {
   const accountView = view === "account";
   const timer = view === "timer";
   const times = view === "times";
+  const statsView = view === "stats";
   const reviews = view === "reviews";
   const rooms = view === "rooms";
   const algorithms = view === "algorithms";
@@ -510,6 +598,7 @@ function setView(view) {
   accountViewEl.classList.toggle("hidden", !accountView);
   timerViewEl.classList.toggle("hidden", !timer);
   timesViewEl.classList.toggle("hidden", !times);
+  timerStatsViewEl.classList.toggle("hidden", !statsView);
   reviewsViewEl.classList.toggle("hidden", !reviews);
   roomsViewEl.classList.toggle("hidden", !rooms);
   algorithmsViewEl.classList.toggle("hidden", !algorithms);
@@ -517,24 +606,27 @@ function setView(view) {
   settingsViewEl.classList.toggle("hidden", !settingsView);
   dockHomeEl.classList.toggle("is-active", home);
   dockTimesEl.classList.toggle("is-active", times || !historyPanelEl.classList.contains("closed"));
+  dockStatsEl.classList.toggle("is-active", statsView);
   dockReviewsEl.classList.toggle("is-active", reviews);
   dockRoomsEl.classList.toggle("is-active", rooms);
   dockAlgorithmsEl.classList.toggle("is-active", algorithms);
   dockCompetitionsEl.classList.toggle("is-active", competitions);
   dockSettingsEl.classList.toggle("is-active", settingsView || accountView);
   document.body.classList.toggle("is-home", home);
-  document.body.classList.toggle("is-timer", timer || times || settingsView);
+  document.body.classList.toggle("is-timer", timer || times || statsView || settingsView);
   document.body.classList.toggle("is-room", rooms);
   document.body.classList.toggle("is-login", login);
   document.body.classList.toggle("is-account", accountView);
   document.body.classList.toggle("is-timer-page", timer);
   document.body.classList.toggle("is-times", times);
+  document.body.classList.toggle("is-stats", statsView);
   document.body.classList.toggle("is-settings", settingsView);
   if (!timer) {
     setPanel(false);
     solveDetailEl.classList.add("hidden");
   }
   if (timer) applyInputMode();
+  if (statsView) renderStatsGraph();
 }
 
 function openTimerSettings() {
@@ -878,6 +970,11 @@ function loadSettings() {
   } catch {
     return { ...defaultSettings };
   }
+}
+
+function loadStatsSolveCount() {
+  const value = Number.parseInt(localStorage.getItem(statsCountKey) || "12", 10);
+  return statsCountOptions.includes(value) ? value : 12;
 }
 
 function normalizeSettings(value) {
