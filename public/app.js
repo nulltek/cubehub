@@ -275,7 +275,7 @@ for (const input of [holdDurationInputEl, inspectionToggleEl, blindInspectionTog
 
 async function loadScramble() {
   const event = getCurrentEvent();
-  eventNameEl.textContent = event.label;
+  if (eventNameEl) eventNameEl.textContent = event.label;
   cubePreviewEventEl.textContent = event.label;
   scrambleEl.textContent = "Loading scramble...";
   syncHistoryPanelTop();
@@ -992,7 +992,7 @@ function isTypingMode() {
 }
 
 function idleLabel() {
-  return isTypingMode() ? "TYPE" : "SPACE";
+  return "";
 }
 
 function loadSolves() {

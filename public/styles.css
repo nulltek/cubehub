@@ -1000,7 +1000,7 @@ body.is-timer-page {
   margin: 0 auto;
   min-height: 64px;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 16px;
   align-items: center;
   padding: 12px 14px;
@@ -1159,6 +1159,10 @@ a:focus-visible {
   font-weight: 700;
 }
 
+.timer-state:empty {
+  display: none;
+}
+
 .manual-entry {
   position: relative;
   z-index: 1;
@@ -1194,22 +1198,21 @@ a:focus-visible {
 .rolling-stats {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(78px, 1fr));
-  gap: 8px;
-  width: min(460px, 100%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  width: min(520px, 100%);
 }
 
 .rolling-stats div {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: rgba(17, 19, 17, 0.72);
-  padding: 10px;
-  text-align: center;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: max-content;
 }
 
 .rolling-stats span {
-  display: block;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -1690,11 +1693,10 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer {
 
   .scramble-bar {
     width: 100%;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
     align-items: stretch;
   }
 
-  .event-pill,
   .ghost-button {
     justify-self: start;
   }
