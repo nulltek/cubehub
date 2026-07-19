@@ -1,5 +1,6 @@
 const timerEl = document.querySelector("#timer");
 const timerStateEl = document.querySelector("#timerState");
+const scrambleBarEl = document.querySelector(".scramble-bar");
 const scrambleEl = document.querySelector("#scramble");
 const cubeImageEl = document.querySelector("#cubeImage");
 const timeListEl = document.querySelector("#timeList");
@@ -157,6 +158,9 @@ setImagePanel(!window.matchMedia("(max-width: 920px)").matches);
 setView("home");
 loadScramble();
 
+window.addEventListener("resize", syncHistoryPanelTop);
+window.addEventListener("orientationchange", () => setTimeout(syncHistoryPanelTop, 250));
+
 document.addEventListener("keydown", (event) => {
   if (event.code !== "Space" || event.repeat || isTypingTarget(event.target)) return;
   if (timerViewEl.classList.contains("hidden") || isTypingMode()) return;
@@ -261,6 +265,7 @@ async function loadScramble() {
   eventNameEl.textContent = event.label;
   cubePreviewEventEl.textContent = event.label;
   scrambleEl.textContent = "Loading scramble...";
+  syncHistoryPanelTop();
   try {
     const response = await fetch(`/api/scramble?event=${encodeURIComponent(currentEvent)}`);
     currentScramble = await response.json();
@@ -268,6 +273,8 @@ async function loadScramble() {
     cubeImageEl.innerHTML = currentScramble.imageSvg;
   } catch {
     scrambleEl.textContent = "Could not load scramble.";
+  } finally {
+    requestAnimationFrame(syncHistoryPanelTop);
   }
 }
 
@@ -627,6 +634,16 @@ function setView(view) {
   }
   if (timer) applyInputMode();
   if (statsView) renderStatsGraph();
+  requestAnimationFrame(syncHistoryPanelTop);
+}
+
+function syncHistoryPanelTop() {
+  if (!scrambleBarEl || timerViewEl.classList.contains("hidden")) {
+    document.documentElement.style.setProperty("--timer-panel-top", "12px");
+    return;
+  }
+  const rect = scrambleBarEl.getBoundingClientRect();
+  document.documentElement.style.setProperty("--timer-panel-top", `${Math.ceil(rect.bottom + 10)}px`);
 }
 
 function openTimerSettings() {
