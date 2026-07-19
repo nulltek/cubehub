@@ -91,6 +91,7 @@ const profilePrsEl = document.querySelector("#profilePrs");
 const storageKey = "cube-timer-solves-v1";
 const settingsKey = "cube-timer-settings-v2";
 const statsCountKey = "cube-timer-stats-count-v1";
+const scrambleQueueTarget = 5;
 const underDevelopmentViews = new Set(["reviews", "rooms", "algorithms", "competitions"]);
 const statsCountOptions = [3, 5, 12, 25, 50, 100, 200, 300, 500, 1000, 2000];
 const events = [
@@ -123,6 +124,7 @@ const defaultSettings = {
 };
 
 let currentScramble = null;
+const scrambleQueues = new Map();
 let currentEvent = localStorage.getItem("cube-timer-event-v1") || "333";
 if (!events.some((event) => event.id === currentEvent)) currentEvent = "333";
 let solves = loadSolves();
@@ -221,7 +223,7 @@ accountFormEl.addEventListener("submit", (event) => {
   };
   saveServerAccount();
 });
-newScrambleEl.addEventListener("click", loadScramble);
+newScrambleEl.addEventListener("click", () => loadScramble());
 closePanelEl.addEventListener("click", () => setPanel(false));
 openPanelEl.addEventListener("click", () => setPanel(true));
 closeDetailEl.addEventListener("click", closeSolveDetail);
@@ -280,18 +282,70 @@ async function loadScramble() {
   const event = getCurrentEvent();
   if (eventNameEl) eventNameEl.textContent = event.label;
   cubePreviewEventEl.textContent = event.label;
-  scrambleEl.textContent = "Loading scramble...";
+  const eventId = currentEvent;
+  const queue = getScrambleQueue(eventId);
+  const queuedScramble = queue.items.shift();
+  if (queuedScramble) {
+    displayScramble(queuedScramble);
+    ensureScrambleQueue(eventId);
+    return;
+  }
+
+  scrambleEl.textContent = "Preparing scramble...";
   syncHistoryPanelTop();
+  ensureScrambleQueue(eventId, Math.max(0, scrambleQueueTarget - 1));
   try {
-    const response = await fetch(`/api/scramble?event=${encodeURIComponent(currentEvent)}`);
-    currentScramble = await response.json();
-    scrambleEl.textContent = currentScramble.scramble;
-    cubeImageEl.innerHTML = currentScramble.imageSvg;
+    const scramble = await fetchScramble(eventId);
+    if (eventId !== currentEvent) return;
+    displayScramble(scramble);
   } catch {
-    scrambleEl.textContent = "Could not load scramble.";
+    if (eventId === currentEvent) scrambleEl.textContent = "Could not load scramble.";
   } finally {
+    ensureScrambleQueue(eventId);
     requestAnimationFrame(syncHistoryPanelTop);
   }
+}
+
+function displayScramble(scramble) {
+  currentScramble = scramble;
+  scrambleEl.textContent = scramble.scramble;
+  cubeImageEl.innerHTML = scramble.imageSvg || "";
+}
+
+function getScrambleQueue(eventId) {
+  if (!scrambleQueues.has(eventId)) {
+    scrambleQueues.set(eventId, { items: [], inFlight: 0 });
+  }
+  return scrambleQueues.get(eventId);
+}
+
+function ensureScrambleQueue(eventId = currentEvent, target = scrambleQueueTarget) {
+  const queue = getScrambleQueue(eventId);
+  while (queue.items.length + queue.inFlight < target) {
+    queue.inFlight += 1;
+    let loaded = false;
+    fetchScramble(eventId)
+      .then((scramble) => {
+        loaded = true;
+        queue.items.push(scramble);
+      })
+      .catch(() => {})
+      .finally(() => {
+        queue.inFlight = Math.max(0, queue.inFlight - 1);
+        if (eventId === currentEvent && !currentScramble && queue.items.length) {
+          displayScramble(queue.items.shift());
+        }
+        if (loaded && eventId === currentEvent) ensureScrambleQueue(eventId);
+      });
+  }
+}
+
+async function fetchScramble(eventId) {
+  const response = await fetch(`/api/scramble?event=${encodeURIComponent(eventId)}&_=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Scramble request failed.");
+  const payload = await response.json();
+  if (!payload?.scramble) throw new Error("Bad scramble payload.");
+  return payload;
 }
 
 function beginHold() {
