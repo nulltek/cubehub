@@ -77,6 +77,7 @@ const inspectionDirectionSelectEl = document.querySelector("#inspectionDirection
 const displayModeSelectEl = document.querySelector("#displayModeSelect");
 const beepToggleEl = document.querySelector("#beepToggle");
 const inputModeSelectEl = document.querySelector("#inputModeSelect");
+const ao5ProjectionToggleEl = document.querySelector("#ao5ProjectionToggle");
 const manualEntryEl = document.querySelector("#manualEntry");
 const manualEntryLabelEl = document.querySelector("#manualEntryLabel");
 const manualTimeInputEl = document.querySelector("#manualTimeInput");
@@ -130,7 +131,8 @@ const defaultSettings = {
   inspectionDirection: "down",
   displayMode: "decimals",
   beeps: false,
-  inputMode: "timer"
+  inputMode: "timer",
+  showAo5Projection: false
 };
 
 let currentScramble = null;
@@ -292,7 +294,7 @@ statsSolveCountEl.addEventListener("change", () => {
   localStorage.setItem(statsCountKey, String(statsSolveCount));
   renderStatsGraph();
 });
-for (const input of [holdDurationInputEl, inspectionToggleEl, blindInspectionToggleEl, inspectionDirectionSelectEl, displayModeSelectEl, beepToggleEl, inputModeSelectEl]) {
+for (const input of [holdDurationInputEl, inspectionToggleEl, blindInspectionToggleEl, inspectionDirectionSelectEl, displayModeSelectEl, beepToggleEl, inputModeSelectEl, ao5ProjectionToggleEl]) {
   input.addEventListener("change", saveSettingsFromForm);
 }
 
@@ -542,10 +544,18 @@ function renderRollingStats(eventSolves = getEventSolves()) {
   const mo3 = meanOfLast(eventSolves, 3);
   const ao5 = averageOfLast(eventSolves, 5);
   const ao12 = averageOfLast(eventSolves, 12);
+  const projection = settings.showAo5Projection ? ao5Projection(eventSolves) : null;
   rollingStatsEl.innerHTML = `
     <div><span>${mo3 || "--"}</span><small>mo3</small></div>
     <div><span>${ao5 || "--"}</span><small>ao5</small></div>
     <div><span>${ao12 || "--"}</span><small>ao12</small></div>
+    ${projection ? `
+      <div class="ao5-projection">
+        <span>${projection.best}</span><small>best next ao5</small>
+        <span>${projection.worst}</span><small>worst next ao5</small>
+        <span>${projection.target}</span><small>need for best</small>
+      </div>
+    ` : ""}
   `;
 }
 
@@ -809,7 +819,9 @@ function renderSettings() {
   displayModeSelectEl.value = settings.displayMode;
   beepToggleEl.checked = settings.beeps;
   inputModeSelectEl.value = settings.inputMode;
+  ao5ProjectionToggleEl.checked = settings.showAo5Projection;
   applyInputMode();
+  renderRollingStats();
 }
 
 function renderPrGrid() {
@@ -1073,12 +1085,14 @@ function saveSettingsFromForm() {
     inspectionDirection: inspectionDirectionSelectEl.value,
     displayMode: displayModeSelectEl.value,
     beeps: beepToggleEl.checked,
-    inputMode: inputModeSelectEl.value
+    inputMode: inputModeSelectEl.value,
+    showAo5Projection: ao5ProjectionToggleEl.checked
   };
   if (!Number.isFinite(settings.holdDurationMs)) settings.holdDurationMs = defaultSettings.holdDurationMs;
   localStorage.setItem(settingsKey, JSON.stringify(settings));
   saveServerSettings();
   applyInputMode();
+  renderRollingStats();
 }
 
 function applyInputMode() {
@@ -1160,6 +1174,7 @@ function normalizeSettings(value) {
   if (!["up", "down"].includes(loaded.inspectionDirection)) loaded.inspectionDirection = defaultSettings.inspectionDirection;
   if (!["decimals", "seconds", "inspection", "nothing"].includes(loaded.displayMode)) loaded.displayMode = defaultSettings.displayMode;
   if (!["timer", "typing"].includes(loaded.inputMode)) loaded.inputMode = defaultSettings.inputMode;
+  loaded.showAo5Projection = Boolean(loaded.showAo5Projection);
   return loaded;
 }
 
@@ -1227,8 +1242,47 @@ function averageOfLast(eventSolves, count) {
   return formatAverageValue(middle.reduce((sum, solve) => sum + resultValue(solve), 0) / middle.length, sample[0]);
 }
 
+function ao5Projection(eventSolves) {
+  const sample = eventSolves.slice(0, 4);
+  if (sample.length < 4) {
+    return { best: "--", worst: "--", target: "need 4 solves" };
+  }
+  const sampleSolve = sample.find((solve) => resultValue(solve) !== Infinity) || sample[0];
+  const dnfCount = sample.filter((solve) => resultValue(solve) === Infinity).length;
+  const finiteValues = sample
+    .map(resultValue)
+    .filter((value) => value !== Infinity && Number.isFinite(value))
+    .sort((a, b) => a - b);
+
+  if (dnfCount >= 2 || !finiteValues.length) {
+    return { best: "DNF", worst: "DNF", target: "--" };
+  }
+
+  let bestValue = null;
+  let worstValue = null;
+  if (dnfCount === 1) {
+    bestValue = finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length;
+    worstValue = Infinity;
+  } else {
+    bestValue = finiteValues.slice(0, -1).reduce((sum, value) => sum + value, 0) / 3;
+    worstValue = finiteValues.slice(1).reduce((sum, value) => sum + value, 0) / 3;
+  }
+
+  const targetValue = finiteValues[0];
+  return {
+    best: formatAverageValue(bestValue, sampleSolve),
+    worst: worstValue === Infinity ? "DNF" : formatAverageValue(worstValue, sampleSolve),
+    target: `<= ${formatProjectionTarget(targetValue, sampleSolve)}`
+  };
+}
+
 function formatAverageValue(value, sampleSolve) {
   if (sampleSolve?.resultType === "moves") return `${value.toFixed(2)} moves`;
+  return formatTime(value);
+}
+
+function formatProjectionTarget(value, sampleSolve) {
+  if (sampleSolve?.resultType === "moves") return `${Math.floor(value)} moves`;
   return formatTime(value);
 }
 
