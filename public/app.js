@@ -33,6 +33,7 @@ const dockRoomsEl = document.querySelector("#dockRooms");
 const dockAlgorithmsEl = document.querySelector("#dockAlgorithms");
 const dockCompetitionsEl = document.querySelector("#dockCompetitions");
 const dockSettingsEl = document.querySelector("#dockSettings");
+const dockToggleEl = document.querySelector("#dockToggle");
 const homeViewEl = document.querySelector("#homeView");
 const timerViewEl = document.querySelector("#timerView");
 const homeStartButtonEl = document.querySelector("#homeStartButton");
@@ -161,6 +162,7 @@ loadScramble();
 
 window.addEventListener("resize", syncHistoryPanelTop);
 window.addEventListener("orientationchange", () => setTimeout(syncHistoryPanelTop, 250));
+window.addEventListener("resize", syncDockMode);
 
 document.addEventListener("keydown", (event) => {
   if (mode === "running" && !timerViewEl.classList.contains("hidden") && !isTypingMode()) {
@@ -254,6 +256,7 @@ dockRoomsEl.addEventListener("click", () => navigateFeature("rooms"));
 dockAlgorithmsEl.addEventListener("click", () => navigateFeature("algorithms"));
 dockCompetitionsEl.addEventListener("click", () => navigateFeature("competitions"));
 dockSettingsEl.addEventListener("click", () => currentView === "home" ? navigateFeature("account") : openTimerSettings());
+dockToggleEl.addEventListener("click", () => setDockOpen(!document.body.classList.contains("dock-open")));
 homeStartButtonEl.addEventListener("click", () => navigateFeature("timer"));
 homeTimerCardEl.addEventListener("click", () => navigateFeature("timer"));
 homeReviewsCardEl.addEventListener("click", () => navigateFeature("reviews"));
@@ -656,7 +659,18 @@ function setView(view) {
   }
   if (timer) applyInputMode();
   if (statsView) renderStatsGraph();
+  if (isTinyDock()) setDockOpen(false);
   requestAnimationFrame(syncHistoryPanelTop);
+}
+
+function setDockOpen(open) {
+  document.body.classList.toggle("dock-open", open);
+  dockToggleEl.setAttribute("aria-expanded", String(open));
+  dockToggleEl.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+}
+
+function syncDockMode() {
+  if (!isTinyDock()) setDockOpen(false);
 }
 
 function syncHistoryPanelTop() {
@@ -1142,6 +1156,10 @@ function isTypingTarget(target) {
 
 function isSmallScreen() {
   return window.matchMedia("(max-width: 820px)").matches;
+}
+
+function isTinyDock() {
+  return window.matchMedia("(max-width: 520px)").matches;
 }
 
 function freshUrl(path) {

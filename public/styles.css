@@ -1466,6 +1466,10 @@ a:focus-visible {
   display: none;
 }
 
+.dock-toggle {
+  display: none;
+}
+
 .dock-button {
   width: 68px;
   flex: 0 0 68px;
@@ -1736,7 +1740,7 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer {
 @media (max-width: 520px) {
   :root {
     --dock-bottom: 10px;
-    --dock-clearance: 92px;
+    --dock-clearance: 82px;
   }
 
   .app-shell {
@@ -1813,23 +1817,96 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer {
 
   .cube-preview {
     position: fixed;
-    left: 50%;
+    left: 10px;
     right: auto;
-    bottom: var(--dock-clearance);
-    transform: translateX(-50%);
-    width: min(224px, calc(100vw - 24px));
-    max-width: 224px;
-    justify-self: center;
-    padding: 10px;
+    bottom: calc(var(--dock-bottom) + 68px);
+    transform: none;
+    width: min(156px, calc(100vw - 94px));
+    max-width: 156px;
+    justify-self: start;
+    padding: 8px;
     gap: 8px;
+    border-radius: 12px;
+    background: rgba(17, 19, 17, 0.88);
+  }
+
+  .cube-preview-head {
+    gap: 6px;
+  }
+
+  .cube-preview-head span,
+  .cube-preview-head small {
+    font-size: 10px;
+  }
+
+  .cube-image {
+    padding: 5px;
+    border-radius: 9px;
   }
 
   .bottom-dock {
-    width: calc(100vw - 20px);
+    left: auto;
+    right: 10px;
+    bottom: calc(var(--dock-bottom) + 66px);
+    width: min(252px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
+    max-height: min(58svh, 370px);
+    transform: translate(18px, 18px) scale(0.82);
+    transform-origin: bottom right;
+    opacity: 0;
+    pointer-events: none;
+    overflow: auto;
+    flex-wrap: wrap;
     gap: 5px;
     padding: 7px;
     border-radius: 18px;
-    justify-content: center;
+    justify-content: flex-end;
+    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease;
+  }
+
+  body.dock-open .bottom-dock {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .dock-toggle {
+    position: fixed;
+    right: 10px;
+    bottom: var(--dock-bottom);
+    z-index: 10;
+    width: 58px;
+    height: 58px;
+    border: 1px solid rgba(216, 255, 95, 0.35);
+    border-radius: 18px;
+    background: rgba(17, 19, 17, 0.88);
+    color: var(--accent);
+    box-shadow: 0 18px 60px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(18px);
+    display: grid;
+    place-items: center;
+    gap: 4px;
+    padding: 14px;
+  }
+
+  .dock-toggle span {
+    width: 20px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+
+  body.dock-open .dock-toggle span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  body.dock-open .dock-toggle span:nth-child(2) {
+    opacity: 0;
+  }
+
+  body.dock-open .dock-toggle span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
   }
 
   .dock-button {
