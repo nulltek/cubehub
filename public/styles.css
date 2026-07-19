@@ -1846,7 +1846,7 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-re
 
   .bottom-dock {
     left: 10px;
-    right: 76px;
+    right: 10px;
     bottom: var(--dock-bottom);
     width: auto;
     max-width: calc(100vw - 20px);
@@ -1870,11 +1870,6 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-re
     opacity: 1;
     pointer-events: auto;
   }
-
-  body.is-timer-page .bottom-dock {
-    left: min(150px, 42vw);
-  }
-
   .dock-toggle {
     position: fixed;
     right: 10px;
