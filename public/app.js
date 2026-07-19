@@ -375,7 +375,7 @@ function createSolve(rawValue, penalty = "none", resultType = "time") {
     createdAt: new Date().toISOString()
   };
   solves.unshift(solve);
-  saveSolves();
+  saveSolves(solve, "create");
   renderSolves();
   showSolve(solve);
   loadScramble();
@@ -462,7 +462,7 @@ function updateActiveSolve(patch) {
   if (!activeSolve) return;
   activeSolve = { ...activeSolve, ...patch };
   solves = solves.map((solve) => solve.id === activeSolve.id ? activeSolve : solve);
-  saveSolves();
+  saveSolves(activeSolve, "update");
   renderSolves();
 }
 
@@ -593,6 +593,7 @@ async function loadServerAccount() {
     const response = await fetch("/api/me");
     const payload = await response.json();
     account = payload.user;
+    if (account?.username) await loadServerTimerData();
     renderAccount();
     renderRooms();
   } catch {
@@ -615,6 +616,42 @@ async function saveServerAccount() {
   account = payload.user;
   renderAccount();
   renderRooms();
+}
+
+async function loadServerTimerData() {
+  try {
+    const [solvesResponse, settingsResponse] = await Promise.all([
+      fetch("/api/solves"),
+      fetch("/api/timer-settings")
+    ]);
+    if (solvesResponse.ok) {
+      const payload = await solvesResponse.json();
+      if (Array.isArray(payload.solves)) {
+        solves = payload.solves;
+        localStorage.setItem(storageKey, JSON.stringify(solves));
+        renderSolves();
+      }
+    }
+    if (settingsResponse.ok) {
+      const payload = await settingsResponse.json();
+      if (payload.settings) {
+        settings = normalizeSettings(payload.settings);
+        localStorage.setItem(settingsKey, JSON.stringify(settings));
+        renderSettings();
+      }
+    }
+  } catch {
+    // Local storage remains the offline fallback.
+  }
+}
+
+async function saveServerSettings() {
+  if (!account?.username) return;
+  fetch("/api/timer-settings", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(settings)
+  }).catch(() => {});
 }
 
 function collectPrs() {
@@ -763,6 +800,7 @@ function saveSettingsFromForm() {
   };
   if (!Number.isFinite(settings.holdDurationMs)) settings.holdDurationMs = defaultSettings.holdDurationMs;
   localStorage.setItem(settingsKey, JSON.stringify(settings));
+  saveServerSettings();
   applyInputMode();
 }
 
@@ -823,17 +861,30 @@ function loadSolves() {
 
 function loadSettings() {
   try {
-    const loaded = { ...defaultSettings, ...JSON.parse(localStorage.getItem(settingsKey) || "{}") };
-    if (![0, 300, 500, 1000].includes(loaded.holdDurationMs)) loaded.holdDurationMs = defaultSettings.holdDurationMs;
-    if (!["up", "down"].includes(loaded.inspectionDirection)) loaded.inspectionDirection = defaultSettings.inspectionDirection;
-    return loaded;
+    return normalizeSettings(JSON.parse(localStorage.getItem(settingsKey) || "{}"));
   } catch {
     return { ...defaultSettings };
   }
 }
 
-function saveSolves() {
+function normalizeSettings(value) {
+  const loaded = { ...defaultSettings, ...(value || {}) };
+  if (![0, 300, 500, 1000].includes(loaded.holdDurationMs)) loaded.holdDurationMs = defaultSettings.holdDurationMs;
+  if (!["up", "down"].includes(loaded.inspectionDirection)) loaded.inspectionDirection = defaultSettings.inspectionDirection;
+  if (!["decimals", "seconds", "inspection", "nothing"].includes(loaded.displayMode)) loaded.displayMode = defaultSettings.displayMode;
+  if (!["timer", "typing"].includes(loaded.inputMode)) loaded.inputMode = defaultSettings.inputMode;
+  return loaded;
+}
+
+function saveSolves(changedSolve = null, action = "update") {
   localStorage.setItem(storageKey, JSON.stringify(solves));
+  if (!account?.username || !changedSolve) return;
+  const create = action === "create";
+  fetch(create ? "/api/solves" : `/api/solves/${encodeURIComponent(changedSolve.id)}`, {
+    method: create ? "POST" : "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(changedSolve)
+  }).catch(() => {});
 }
 
 function formatRunningTime(ms) {

@@ -149,7 +149,12 @@ const server = createServer(async (req, res) => {
     if (url.pathname === "/api/me") return json(res, { user: await currentUser(req) });
     if (url.pathname === "/api/account" && req.method === "GET") return getAccount(req, res);
     if (url.pathname === "/api/account" && req.method === "POST") return saveAccount(req, res);
-    if (url.pathname === "/api/rooms" && req.method === "GET") return listRooms(res);
+    if (url.pathname === "/api/solves" && req.method === "GET") return listSolves(req, res);
+    if (url.pathname === "/api/solves" && req.method === "POST") return saveSolve(req, res);
+    if (url.pathname.startsWith("/api/solves/") && req.method === "PATCH") return updateSolve(req, url, res);
+    if (url.pathname === "/api/timer-settings" && req.method === "GET") return getTimerSettings(req, res);
+    if (url.pathname === "/api/timer-settings" && req.method === "POST") return saveTimerSettings(req, res);
+    if (url.pathname === "/api/rooms" && req.method === "GET") return listRooms(req, res);
     if (url.pathname === "/api/rooms/join" && req.method === "POST") return joinRoom(req, res);
     if (url.pathname === "/api/rooms/finish" && req.method === "POST") return finishRoomSolve(req, res);
     if (url.pathname === "/api/events") {
@@ -553,6 +558,20 @@ async function initDatabase() {
       last_active_at timestamptz not null default now(),
       primary key (room_id, user_id)
     );
+    create table if not exists solves (
+      id uuid primary key,
+      user_id bigint not null references users(id) on delete cascade,
+      event_id text not null,
+      solve_enc text not null,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+    create index if not exists solves_user_event_created_idx on solves (user_id, event_id, created_at desc);
+    create table if not exists timer_settings (
+      user_id bigint primary key references users(id) on delete cascade,
+      settings_enc text not null,
+      updated_at timestamptz not null default now()
+    );
   `);
 }
 
@@ -673,6 +692,69 @@ async function saveAccount(req, res) {
   json(res, { ok: true, user: await currentUser(req) });
 }
 
+async function listSolves(req, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const result = await pool.query(
+    "select solve_enc from solves where user_id = $1 order by created_at desc",
+    [user.id]
+  );
+  json(res, { solves: result.rows.map((row) => JSON.parse(decryptText(row.solve_enc))).filter(Boolean) });
+}
+
+async function saveSolve(req, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const solve = await readJson(req);
+  if (!solve.id || !solve.event) return json(res, { error: "Bad solve." }, 400);
+  await pool.query(`
+    insert into solves (id, user_id, event_id, solve_enc, created_at)
+    values ($1, $2, $3, $4, $5)
+    on conflict (id) do update set solve_enc = excluded.solve_enc, updated_at = now()
+  `, [
+    solve.id,
+    user.id,
+    solve.event,
+    encryptText(JSON.stringify(solve)),
+    solve.createdAt ? new Date(solve.createdAt) : new Date()
+  ]);
+  json(res, { ok: true });
+}
+
+async function updateSolve(req, url, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const id = decodeURIComponent(url.pathname.split("/").pop() || "");
+  const solve = await readJson(req);
+  if (!id || solve.id !== id || !solve.event) return json(res, { error: "Bad solve." }, 400);
+  const result = await pool.query(`
+    update solves set event_id = $1, solve_enc = $2, updated_at = now()
+    where id = $3 and user_id = $4
+  `, [solve.event, encryptText(JSON.stringify(solve)), id, user.id]);
+  if (result.rowCount === 0) return json(res, { error: "Solve not found." }, 404);
+  json(res, { ok: true });
+}
+
+async function getTimerSettings(req, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const result = await pool.query("select settings_enc from timer_settings where user_id = $1", [user.id]);
+  const settings = result.rows[0]?.settings_enc ? JSON.parse(decryptText(result.rows[0].settings_enc)) : null;
+  json(res, { settings });
+}
+
+async function saveTimerSettings(req, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const settings = await readJson(req);
+  await pool.query(`
+    insert into timer_settings (user_id, settings_enc)
+    values ($1, $2)
+    on conflict (user_id) do update set settings_enc = excluded.settings_enc, updated_at = now()
+  `, [user.id, encryptText(JSON.stringify(settings))]);
+  json(res, { ok: true });
+}
+
 async function logout(req, res) {
   if (pool) {
     const token = parseCookie(req.headers.cookie || "", cookieName);
@@ -682,8 +764,9 @@ async function logout(req, res) {
   res.end();
 }
 
-async function listRooms(res) {
-  if (!pool) return json(res, { rooms: [] });
+async function listRooms(req, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
   await pool.query("delete from room_participants where status = 'waiting' and last_active_at < now() - interval '2 minutes'");
   const result = await pool.query(`
     select rp.room_id, rp.event_id, rp.room_number, rp.status, rp.scramble, u.id, u.username, u.email, u.avatar_url,
