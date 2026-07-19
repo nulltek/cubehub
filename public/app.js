@@ -162,7 +162,6 @@ renderRooms();
 setPanel(!window.matchMedia("(max-width: 1180px)").matches);
 setImagePanel(!window.matchMedia("(max-width: 920px)").matches);
 setView("home");
-loadScramble();
 
 window.addEventListener("resize", syncHistoryPanelTop);
 window.addEventListener("orientationchange", () => setTimeout(syncHistoryPanelTop, 250));
@@ -295,7 +294,6 @@ async function loadScramble() {
 
   scrambleEl.textContent = "Preparing scramble...";
   syncHistoryPanelTop();
-  ensureScrambleQueue(eventId, Math.max(0, scrambleQueueTarget - 1));
   try {
     const scramble = await fetchScramble(eventId);
     if (eventId !== currentEvent) return;
@@ -323,23 +321,22 @@ function getScrambleQueue(eventId) {
 
 function ensureScrambleQueue(eventId = currentEvent, target = scrambleQueueTarget) {
   const queue = getScrambleQueue(eventId);
-  while (queue.items.length + queue.inFlight < target) {
-    queue.inFlight += 1;
-    let loaded = false;
-    fetchScramble(eventId)
-      .then((scramble) => {
-        loaded = true;
-        queue.items.push(scramble);
-      })
-      .catch(() => {})
-      .finally(() => {
-        queue.inFlight = Math.max(0, queue.inFlight - 1);
-        if (eventId === currentEvent && !currentScramble && queue.items.length) {
-          displayScramble(queue.items.shift());
-        }
-        if (loaded && eventId === currentEvent) ensureScrambleQueue(eventId);
-      });
-  }
+  if (queue.items.length + queue.inFlight >= target || queue.inFlight > 0) return;
+  queue.inFlight = 1;
+  let loaded = false;
+  fetchScramble(eventId)
+    .then((scramble) => {
+      loaded = true;
+      queue.items.push(scramble);
+    })
+    .catch(() => {})
+    .finally(() => {
+      queue.inFlight = 0;
+      if (eventId === currentEvent && !currentScramble && queue.items.length) {
+        displayScramble(queue.items.shift());
+      }
+      if (loaded && eventId === currentEvent) ensureScrambleQueue(eventId, target);
+    });
 }
 
 async function fetchScramble(eventId) {
@@ -728,6 +725,8 @@ function setView(view) {
   }
   if (timer) applyInputMode();
   if (statsView) renderStatsGraph();
+  if (timer && !currentScramble) loadScramble();
+  if (timer && currentScramble) ensureScrambleQueue(currentEvent);
   if (isTinyDock()) setDockOpen(false);
   requestAnimationFrame(syncHistoryPanelTop);
 }

@@ -131,6 +131,7 @@ const events = {
 
 let tnoodleStarted = false;
 let tnoodleProcess = null;
+let scrambleChain = Promise.resolve();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -164,7 +165,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname === "/api/scramble") {
       const eventId = url.searchParams.get("event") || "333";
-      return json(res, await getScramble(eventId));
+      return json(res, await queuedGetScramble(eventId));
     }
 
     return serveStatic(url.pathname, res);
@@ -204,6 +205,12 @@ async function getScramble(eventId) {
     imageSvg: cubeSvgForScramble(scramble),
     note: "TNoodle no run. Install Java and set TNOODLE_JAR or TNOODLE_BASE_URL for official scrambles."
   };
+}
+
+function queuedGetScramble(eventId) {
+  const task = scrambleChain.catch(() => {}).then(() => getScramble(eventId));
+  scrambleChain = task.catch(() => {});
+  return task;
 }
 
 async function getTnoodleScramble(event) {
