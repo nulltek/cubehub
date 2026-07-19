@@ -1817,12 +1817,12 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-re
 
   .cube-preview {
     position: fixed;
-    left: 10px;
+    left: 6px;
     right: auto;
-    bottom: calc(var(--dock-bottom) + 68px);
+    bottom: 6px;
     transform: none;
-    width: min(156px, calc(100vw - 94px));
-    max-width: 156px;
+    width: min(132px, calc(100vw - 86px));
+    max-width: 132px;
     justify-self: start;
     padding: 8px;
     gap: 8px;
@@ -1845,22 +1845,23 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-re
   }
 
   .bottom-dock {
-    left: auto;
-    right: 10px;
-    bottom: calc(var(--dock-bottom) + 66px);
-    width: min(252px, calc(100vw - 20px));
+    left: 10px;
+    right: 76px;
+    bottom: var(--dock-bottom);
+    width: auto;
     max-width: calc(100vw - 20px);
-    max-height: min(58svh, 370px);
-    transform: translate(18px, 18px) scale(0.82);
+    max-height: none;
+    transform: translateX(18px) scaleX(0.82);
     transform-origin: bottom right;
     opacity: 0;
     pointer-events: none;
-    overflow: auto;
-    flex-wrap: wrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
     gap: 5px;
     padding: 7px;
     border-radius: 18px;
-    justify-content: flex-end;
+    justify-content: flex-start;
     transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease;
   }
 
@@ -1868,6 +1869,10 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-re
     transform: translate(0, 0) scale(1);
     opacity: 1;
     pointer-events: auto;
+  }
+
+  body.is-timer-page .bottom-dock {
+    left: min(150px, 42vw);
   }
 
   .dock-toggle {
