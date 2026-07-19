@@ -1165,16 +1165,24 @@ function formatAverageValue(value, sampleSolve) {
 function parseTypedTime(value) {
   const digits = value.replace(/\D/g, "");
   if (!digits) return NaN;
-  const centiseconds = Number.parseInt(digits, 10);
-  return centiseconds * 10;
+  const centiseconds = Number.parseInt(digits.slice(-2), 10);
+  const beforeCentiseconds = digits.slice(0, -2) || "0";
+  if (beforeCentiseconds.length <= 2) {
+    return (Number.parseInt(beforeCentiseconds, 10) * 1000) + (centiseconds * 10);
+  }
+  const seconds = Number.parseInt(beforeCentiseconds.slice(-2), 10);
+  const minutes = Number.parseInt(beforeCentiseconds.slice(0, -2), 10);
+  return ((minutes * 60 + seconds) * 1000) + (centiseconds * 10);
 }
 
 function formatTime(ms) {
-  const totalSeconds = ms / 1000;
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds - minutes * 60;
-  if (minutes > 0) return `${minutes}:${seconds.toFixed(2).padStart(5, "0")}`;
-  return seconds.toFixed(2);
+  const centiseconds = Math.round(ms / 10);
+  const totalWholeSeconds = Math.floor(centiseconds / 100);
+  const minutes = Math.floor(totalWholeSeconds / 60);
+  const seconds = totalWholeSeconds % 60;
+  const remainder = centiseconds % 100;
+  if (minutes > 0) return `${minutes}:${String(seconds).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+  return `${seconds}.${String(remainder).padStart(2, "0")}`;
 }
 
 function formatDate(value) {
