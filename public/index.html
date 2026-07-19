@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CubeHub</title>
+    <meta name="description" content="CubeHub timer with cube-specific scrambles and solve history." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#timer">Skip to timer</a>
+    <aside class="history-panel" id="historyPanel" aria-label="Previous times">
+      <div class="panel-head">
+        <div>
+          <span class="panel-kicker">session</span>
+          <h2 id="panelTitle">3x3 times</h2>
+        </div>
+        <button class="icon-button" id="closePanel" type="button" aria-label="Close times panel" title="Close">
+          <span aria-hidden="true">x</span>
+        </button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <ol class="time-list" id="timeList"></ol>
+    </aside>
+
+    <button class="panel-tab hidden" id="openPanel" type="button" aria-label="Open times panel" title="Open times">Times</button>
+
+    <main class="times-screen hidden" id="timesView" aria-label="Times screen">
+      <header class="times-screen-head">
+        <button class="back-button" id="backToTimer" type="button" aria-label="Back to timer">
+          <span aria-hidden="true">&larr;</span>
+        </button>
+        <div>
+          <span class="panel-kicker">session</span>
+          <h1 id="timesScreenTitle">3x3 times</h1>
+        </div>
+      </header>
+      <div class="mobile-stats" id="mobileStats"></div>
+      <ol class="mobile-time-list" id="mobileTimeList"></ol>
+    </main>
+
+    <main class="hub-page hidden" id="loginView" aria-label="Login page">
+      <nav class="top-nav page-nav" aria-label="Login">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+      <section class="page-hero compact auth-hero">
+        <h1>Log in to use CubeHub.</h1>
+        <p>Timer sessions, rooms, profiles, settings, reviews, and algorithms require an account.</p>
+      </section>
+      <form class="auth-card" id="loginForm">
+        <p>Use your Google account. CubeHub does not store passwords.</p>
+        <button class="primary-button" type="submit">Continue with Google</button>
+      </form>
+    </main>
+
+    <main class="hub-page hidden" id="accountView" aria-label="Account settings page">
+      <nav class="top-nav page-nav" aria-label="Account">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+      <section class="page-hero compact">
+        <h1>Account settings.</h1>
+        <p>Set your profile, main events, and personal records. Other users can see these details from live rooms.</p>
+      </section>
+      <form class="account-form" id="accountForm">
+        <label class="field-block wide"><span>Description</span><textarea id="accountDescription" rows="4" placeholder="Short note about your cubing"></textarea></label>
+        <label class="field-block wide"><span>Main events</span><input id="accountMainEvents" placeholder="3x3, 2x2, OH" /></label>
+        <div class="pr-grid" id="prGrid" aria-label="Personal records"></div>
+        <button class="primary-button" type="submit">Save account</button>
+      </form>
+    </main>
+
+    <main class="hub-page hidden" id="reviewsView" aria-label="Reviews page">
+      <nav class="top-nav page-nav" aria-label="Reviews">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+      <section class="page-hero compact">
+        <h1>Cube reviews for smarter upgrades.</h1>
+        <p>Reviews will collect cubes, hardware notes, magnets, feel, corner cutting, and value so solvers can compare gear before buying.</p>
+      </section>
+      <section class="preview-grid">
+        <article class="preview-card wide"><span>coming soon</span><strong>3x3 flagships</strong><p>Side-by-side verdicts for speed, stability, and setup.</p></article>
+        <article class="preview-card"><span>coming soon</span><strong>Budget picks</strong><p>Good cubes without bad surprises.</p></article>
+        <article class="preview-card"><span>coming soon</span><strong>Setup notes</strong><p>Lube, springs, tension, and magnets in one place.</p></article>
+      </section>
+    </main>
+
+    <main class="hub-page hidden" id="roomsView" aria-label="Forum and rooms page">
+      <nav class="top-nav page-nav" aria-label="Rooms">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+      <section class="page-hero compact rooms-hero">
+        <h1>Live rooms for every event.</h1>
+        <p class="afk-warning">Please do not AFK. If you enter a room and do not start solving within 2 minutes, you are removed from the room.</p>
+      </section>
+      <section class="room-layout">
+        <div class="room-list" id="roomList" aria-label="Available rooms"></div>
+        <article class="active-room" id="activeRoom">
+          <span>choose a room</span>
+          <strong>Pick one of three rooms for any event.</strong>
+          <p>Every room gets a shared scramble. When all users finish, a new scramble is generated.</p>
+        </article>
+      </section>
+    </main>
+
+    <main class="hub-page hidden" id="algorithmsView" aria-label="Algorithms page">
+      <nav class="top-nav page-nav" aria-label="Algorithms">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+      <section class="page-hero compact">
+        <h1>Algorithms with clean drilling paths.</h1>
+        <p>The algorithms page will organize OLL, PLL, F2L, and event-specific alg sets with filters, favorites, and practice lists.</p>
+      </section>
+      <section class="preview-grid">
+        <article class="preview-card wide"><span>coming soon</span><strong>OLL and PLL library</strong><p>Browse cases, algs, recognition notes, and trainer links.</p></article>
+        <article class="preview-card"><span>coming soon</span><strong>Favorites</strong><p>Save the algs you actually use.</p></article>
+        <article class="preview-card"><span>coming soon</span><strong>Drills</strong><p>Practice weak cases without leaving CubeHub.</p></article>
+      </section>
+    </main>
+
+    <main class="hub-page hidden" id="settingsView" aria-label="Settings page">
+      <nav class="top-nav page-nav" aria-label="Settings">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+      <section class="page-hero compact">
+        <h1 id="settingsTitle">Timer settings</h1>
+        <p id="settingsCopy">Control hold timing, inspection, display, sound, and input mode for solves.</p>
+      </section>
+      <section class="settings-form" aria-label="Timer settings form">
+        <label class="setting-row">
+          <span>Hold to arm</span>
+          <select id="holdDurationInput">
+            <option value="0">Immediately</option>
+            <option value="300">0.3 s</option>
+            <option value="500">0.5 s</option>
+            <option value="1000">1 s</option>
+          </select>
+          <small>How long space or touch must be held before release starts.</small>
+        </label>
+        <label class="setting-row switch-row">
+          <span>Inspection</span>
+          <input id="inspectionToggle" type="checkbox" />
+          <small>Use WCA-style 15 second inspection.</small>
+        </label>
+        <label class="setting-row switch-row">
+          <span>Inspection for blind</span>
+          <input id="blindInspectionToggle" type="checkbox" />
+          <small>Normally off for blindfolded events.</small>
+        </label>
+        <label class="setting-row">
+          <span>Inspection display</span>
+          <select id="inspectionDirectionSelect">
+            <option value="down">Counting down</option>
+            <option value="up">Counting up</option>
+          </select>
+        </label>
+        <label class="setting-row">
+          <span>Solving display</span>
+          <select id="displayModeSelect">
+            <option value="decimals">Decimals</option>
+            <option value="seconds">Only seconds</option>
+            <option value="inspection">Only inspection</option>
+            <option value="nothing">Nothing</option>
+          </select>
+        </label>
+        <label class="setting-row switch-row">
+          <span>Inspection beeps</span>
+          <input id="beepToggle" type="checkbox" />
+          <small>Beeps at 8, 12, 15, and 17 seconds.</small>
+        </label>
+        <label class="setting-row">
+          <span>Input type</span>
+          <select id="inputModeSelect">
+            <option value="timer">On-site timer</option>
+            <option value="typing">Typing</option>
+          </select>
+          <small>Typing auto-places decimals, so 1234 becomes 12.34.</small>
+        </label>
+      </section>
+    </main>
+
+    <main class="home-shell" id="homeView">
+      <nav class="top-nav home-nav" aria-label="Home">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+      </nav>
+
+      <section class="home-hero">
+        <div class="home-copy">
+          <span class="home-kicker">cube hub</span>
+          <h1>A full cubing hub for timers, reviews, rooms, and algorithms.</h1>
+          <p>CubeHub starts with a serious solve timer, then grows into the rest of the cubing space: cube reviews, forum rooms, algorithm libraries, event tools, and clean places for sponsors.</p>
+          <button class="primary-button" id="homeStartButton" type="button">Open timer</button>
+        </div>
+      </section>
+
+      <section class="hub-grid" aria-label="CubeHub pages">
+        <button class="hub-card timer-card" id="homeTimerCard" type="button">
+          <span>timer</span>
+          <strong>Official scrambles and solve history</strong>
+        </button>
+        <button class="hub-card" id="homeReviewsCard" type="button">
+          <span>reviews</span>
+          <strong>Cube reviews and gear comparisons</strong>
+        </button>
+        <button class="hub-card" id="homeRoomsCard" type="button">
+          <span>rooms</span>
+          <strong>Forum threads and live rooms</strong>
+        </button>
+        <button class="hub-card" id="homeAlgorithmsCard" type="button">
+          <span>algorithms</span>
+          <strong>Algorithm library and case drills</strong>
+        </button>
+      </section>
+
+      <section class="sponsor-grid" aria-label="Sponsor spaces">
+        <article class="sponsor-slot wide">
+          <span>partner space</span>
+          <strong>Speedcube store feature</strong>
+        </article>
+        <article class="sponsor-slot">
+          <span>partner space</span>
+          <strong>Timer mats</strong>
+        </article>
+        <article class="sponsor-slot">
+          <span>partner space</span>
+          <strong>Training tools</strong>
+        </article>
+      </section>
+    </main>
+
+    <main class="app-shell hidden" id="timerView">
+      <nav class="top-nav" aria-label="Timer controls">
+        <a class="brand" href="/">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M12 18 32 7l20 11v28L32 57 12 46Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M12 18 32 29l20-11M32 29v28" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M21 23 41 12M22 51V24M43 51V24" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".42"/>
+          </svg>
+          <span>CubeHub</span>
+        </a>
+        <label class="event-select-wrap" for="eventSelect">
+          <span>Event</span>
+          <select id="eventSelect" aria-label="Cube event"></select>
+        </label>
+      </nav>
+
+      <header class="scramble-bar">
+        <div class="event-pill" id="eventName">3x3</div>
+        <p class="scramble" id="scramble">Loading scramble...</p>
+        <button class="ghost-button" id="newScramble" type="button">New</button>
+      </header>
+
+      <section class="timer-stage" aria-label="Timer">
+        <div class="timer-wrap">
+          <div class="timer" id="timer" tabindex="-1">0.00</div>
+          <div class="timer-state" id="timerState">SPACE</div>
+          <form class="manual-entry hidden" id="manualEntry" autocomplete="off">
+            <label for="manualTimeInput" id="manualEntryLabel">Type time</label>
+            <div>
+              <input id="manualTimeInput" inputmode="numeric" placeholder="1234" />
+              <button class="primary-button" type="submit">Save</button>
+            </div>
+          </form>
+          <div class="rolling-stats" id="rollingStats" aria-label="Rolling statistics"></div>
+        </div>
+
+        <section class="cube-preview" aria-label="Scrambled cube image">
+          <div class="cube-preview-head">
+            <span>scramble image</span>
+            <small id="cubePreviewEvent">3x3</small>
+          </div>
+          <div class="cube-image" id="cubeImage"></div>
+        </section>
+      </section>
+
+      <section class="solve-detail hidden" id="solveDetail" aria-live="polite">
+        <div>
+          <span id="detailTime"></span>
+          <p id="detailScramble"></p>
+          <textarea id="detailComment" rows="2" placeholder="Add comment"></textarea>
+        </div>
+        <div class="solve-actions">
+          <button class="ghost-button" id="penaltyNone" type="button">OK</button>
+          <button class="ghost-button" id="penaltyPlusTwo" type="button">+2</button>
+          <button class="ghost-button" id="penaltyDnf" type="button">DNF</button>
+        </div>
+        <button class="ghost-button" id="closeDetail" type="button">Close</button>
+      </section>
+
+    </main>
+
+    <nav class="bottom-dock" aria-label="CubeHub menu">
+      <button class="dock-button is-active" id="dockHome" type="button" aria-label="Home">
+        <span aria-hidden="true">H</span>
+        <small>Home</small>
+      </button>
+      <button class="dock-button home-dock" id="dockTimer" type="button" aria-label="Timer">
+        <span aria-hidden="true">T</span>
+        <small>Timer</small>
+      </button>
+      <button class="dock-button timer-dock" id="dockStats" type="button" aria-label="Statistics">
+        <span aria-hidden="true">S</span>
+        <small>Stats</small>
+      </button>
+      <button class="dock-button timer-dock" id="dockTimes" type="button" aria-label="Toggle times">
+        <span aria-hidden="true">L</span>
+        <small>Times</small>
+      </button>
+      <button class="dock-button hidden" id="dockImage" type="button" aria-label="Toggle scramble image">
+        <span aria-hidden="true">I</span>
+        <small>Image</small>
+      </button>
+      <button class="dock-button home-dock" id="dockReviews" type="button" aria-label="Reviews">
+        <span aria-hidden="true">R</span>
+        <small>Reviews</small>
+      </button>
+      <button class="dock-button home-dock" id="dockRooms" type="button" aria-label="Forums">
+        <span aria-hidden="true">F</span>
+        <small>Forums</small>
+      </button>
+      <button class="dock-button home-dock" id="dockAlgorithms" type="button" aria-label="Algorithms">
+        <span aria-hidden="true">A</span>
+        <small>Algs</small>
+      </button>
+      <button class="dock-button home-dock timer-dock room-dock" id="dockSettings" type="button" aria-label="Settings">
+        <span aria-hidden="true">G</span>
+        <small>Settings</small>
+      </button>
+    </nav>
+
+    <div class="profile-modal hidden" id="profileModal" role="dialog" aria-modal="true" aria-label="User profile">
+      <article>
+        <button class="icon-button" id="closeProfile" type="button" aria-label="Close profile">x</button>
+        <h2 id="profileName"></h2>
+        <p id="profileDescription"></p>
+        <div class="profile-meta" id="profileMainEvents"></div>
+        <div class="profile-prs" id="profilePrs"></div>
+      </article>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

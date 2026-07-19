@@ -1,0 +1,19 @@
+{
+  "name": "cube-timer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "3x3 cube timer with TNoodle-backed scrambles.",
+  "type": "module",
+  "scripts": {
+    "build:java": "javac -classpath vendor/TNoodle-WCA-1.2.3.jar -d build/java java-src/TNoodleSingleScramble.java",
+    "build:java:windows": "tools\\java\\jdk-21.0.11+10\\bin\\javac.exe -classpath vendor\\TNoodle-WCA-1.2.3.jar -d build\\java java-src\\TNoodleSingleScramble.java",
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}
