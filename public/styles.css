@@ -1535,7 +1535,7 @@ a:focus-visible {
   display: grid;
 }
 
-body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer {
+body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-ready):not(.is-holding) {
   color: var(--text);
   opacity: 1;
 }

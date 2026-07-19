@@ -92,6 +92,7 @@ const storageKey = "cube-timer-solves-v1";
 const settingsKey = "cube-timer-settings-v2";
 const statsCountKey = "cube-timer-stats-count-v1";
 const scrambleQueueTarget = 5;
+const solveRestartCooldownMs = 2000;
 const underDevelopmentViews = new Set(["reviews", "rooms", "algorithms", "competitions"]);
 const statsCountOptions = [3, 5, 12, 25, 50, 100, 200, 300, 500, 1000, 2000];
 const events = [
@@ -143,6 +144,7 @@ let holdBaseMode = "idle";
 let holdTimerId = null;
 let holdReady = false;
 let holdStartedAt = 0;
+let lastStoppedAt = -Infinity;
 let startAt = 0;
 let elapsed = 0;
 let inspectionStartedAt = 0;
@@ -355,6 +357,7 @@ function beginHold() {
     holdBaseMode = "idle";
     return;
   }
+  if (isRestartCooldownActive()) return;
   if (!currentScramble?.scramble || mode === "holding") return;
   if (mode !== "idle" && mode !== "inspection") return;
   holdBaseMode = mode;
@@ -374,6 +377,11 @@ function beginHold() {
 function releaseHold() {
   clearTimeout(holdTimerId);
   timerEl.classList.remove("is-holding", "is-ready");
+  if (isRestartCooldownActive()) {
+    holdReady = false;
+    holdBaseMode = "idle";
+    return;
+  }
   if (mode === "running") return;
   if (!holdReady || performance.now() - holdStartedAt < settings.holdDurationMs) {
     mode = holdBaseMode === "inspection" ? "inspection" : "idle";
@@ -435,12 +443,19 @@ function startTimer() {
 
 function stopTimer() {
   mode = "idle";
+  lastStoppedAt = performance.now();
+  holdReady = false;
+  holdBaseMode = "idle";
   cancelAnimationFrame(rafId);
   elapsed = performance.now() - startAt;
   document.body.classList.remove("is-running");
   createSolve(Math.round(elapsed), inspectionPenalty);
   timerStateEl.textContent = idleLabel();
   timerEl.textContent = "0.00";
+}
+
+function isRestartCooldownActive() {
+  return performance.now() - lastStoppedAt < solveRestartCooldownMs;
 }
 
 function tick() {
