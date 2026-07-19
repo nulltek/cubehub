@@ -17,6 +17,7 @@ const closeDetailEl = document.querySelector("#closeDetail");
 const penaltyNoneEl = document.querySelector("#penaltyNone");
 const penaltyPlusTwoEl = document.querySelector("#penaltyPlusTwo");
 const penaltyDnfEl = document.querySelector("#penaltyDnf");
+const deleteSolveEl = document.querySelector("#deleteSolve");
 const eventNameEl = document.querySelector("#eventName");
 const panelTitleEl = document.querySelector("#panelTitle");
 const eventSelectEl = document.querySelector("#eventSelect");
@@ -162,6 +163,11 @@ window.addEventListener("resize", syncHistoryPanelTop);
 window.addEventListener("orientationchange", () => setTimeout(syncHistoryPanelTop, 250));
 
 document.addEventListener("keydown", (event) => {
+  if (mode === "running" && !timerViewEl.classList.contains("hidden") && !isTypingMode()) {
+    event.preventDefault();
+    stopTimer();
+    return;
+  }
   if (event.code !== "Space" || event.repeat || isTypingTarget(event.target)) return;
   if (timerViewEl.classList.contains("hidden") || isTypingMode()) return;
   event.preventDefault();
@@ -189,6 +195,12 @@ timerEl.addEventListener("pointerup", (event) => {
 });
 
 timerEl.addEventListener("pointercancel", cancelHold);
+document.addEventListener("pointerdown", (event) => {
+  if (mode !== "running" || timerViewEl.classList.contains("hidden") || isTypingMode()) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  stopTimer();
+}, true);
 manualEntryEl.addEventListener("submit", (event) => {
   event.preventDefault();
   saveManualSolve();
@@ -215,6 +227,7 @@ detailCommentEl.addEventListener("input", () => updateActiveSolve({ comment: det
 penaltyNoneEl.addEventListener("click", () => updatePenalty("none"));
 penaltyPlusTwoEl.addEventListener("click", () => updatePenalty("+2"));
 penaltyDnfEl.addEventListener("click", () => updatePenalty("DNF"));
+deleteSolveEl.addEventListener("click", deleteActiveSolve);
 eventSelectEl.addEventListener("change", (event) => selectEvent(event.target.value));
 dockTimesEl.addEventListener("click", () => {
   if (!requireAuth("times")) return;
@@ -563,6 +576,15 @@ function updateActiveSolve(patch) {
   activeSolve = { ...activeSolve, ...patch };
   solves = solves.map((solve) => solve.id === activeSolve.id ? activeSolve : solve);
   saveSolves(activeSolve, "update");
+  renderSolves();
+}
+
+function deleteActiveSolve() {
+  if (!activeSolve) return;
+  const id = activeSolve.id;
+  solves = solves.filter((solve) => solve.id !== id);
+  deleteSolveFromStorage(id);
+  closeSolveDetail();
   renderSolves();
 }
 
@@ -1012,6 +1034,12 @@ function saveSolves(changedSolve = null, action = "update") {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(changedSolve)
   }).catch(() => {});
+}
+
+function deleteSolveFromStorage(id) {
+  localStorage.setItem(storageKey, JSON.stringify(solves));
+  if (!account?.username || !id) return;
+  fetch(`/api/solves/${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
 }
 
 function formatRunningTime(ms) {

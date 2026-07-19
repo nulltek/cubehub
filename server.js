@@ -152,6 +152,7 @@ const server = createServer(async (req, res) => {
     if (url.pathname === "/api/solves" && req.method === "GET") return listSolves(req, res);
     if (url.pathname === "/api/solves" && req.method === "POST") return saveSolve(req, res);
     if (url.pathname.startsWith("/api/solves/") && req.method === "PATCH") return updateSolve(req, url, res);
+    if (url.pathname.startsWith("/api/solves/") && req.method === "DELETE") return deleteSolve(req, url, res);
     if (url.pathname === "/api/timer-settings" && req.method === "GET") return getTimerSettings(req, res);
     if (url.pathname === "/api/timer-settings" && req.method === "POST") return saveTimerSettings(req, res);
     if (url.pathname === "/api/rooms" && req.method === "GET") return listRooms(req, res);
@@ -731,6 +732,16 @@ async function updateSolve(req, url, res) {
     update solves set event_id = $1, solve_enc = $2, updated_at = now()
     where id = $3 and user_id = $4
   `, [solve.event, encryptText(JSON.stringify(solve)), id, user.id]);
+  if (result.rowCount === 0) return json(res, { error: "Solve not found." }, 404);
+  json(res, { ok: true });
+}
+
+async function deleteSolve(req, url, res) {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const id = decodeURIComponent(url.pathname.split("/").pop() || "");
+  if (!id) return json(res, { error: "Bad solve." }, 400);
+  const result = await pool.query("delete from solves where id = $1 and user_id = $2", [id, user.id]);
   if (result.rowCount === 0) return json(res, { error: "Solve not found." }, 404);
   json(res, { ok: true });
 }

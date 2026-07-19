@@ -1395,6 +1395,15 @@ a:focus-visible {
   background: rgba(216, 255, 95, 0.14);
 }
 
+.danger-button {
+  color: #ffd1d1;
+}
+
+.danger-button:hover {
+  border-color: rgba(212, 71, 71, 0.56);
+  background: rgba(212, 71, 71, 0.14);
+}
+
 .bottom-dock {
   position: fixed;
   left: 50%;
@@ -1483,6 +1492,11 @@ a:focus-visible {
 .is-timer .timer-dock,
 .is-room .room-dock {
   display: grid;
+}
+
+body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer {
+  color: var(--text);
+  opacity: 1;
 }
 
 .solve-detail span {
