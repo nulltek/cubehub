@@ -646,7 +646,8 @@ body.is-timer-page {
 }
 
 .auth-card,
-.account-form {
+.account-form,
+.account-preferences {
   display: grid;
   gap: 12px;
   border: 1px solid var(--line);
@@ -725,8 +726,38 @@ body.is-timer-page {
   resize: vertical;
 }
 
+.field-block select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(216, 255, 95, 0.22);
+  border-radius: 12px;
+  background: #f5f1e8;
+  color: #15170f;
+  color-scheme: light;
+  padding: 0 38px 0 12px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.field-block small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .field-block.wide {
   grid-column: 1 / -1;
+}
+
+.account-preferences {
+  margin-top: 14px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+}
+
+.account-logout {
+  min-height: 44px;
+  padding: 0 18px;
 }
 
 .pr-grid {
@@ -1765,6 +1796,7 @@ body:not(.is-running) .history-panel:not(.closed) ~ .app-shell .timer:not(.is-re
   .hub-grid,
   .preview-grid,
   .settings-form,
+  .account-preferences,
   .stats-graph-summary {
     grid-template-columns: 1fr;
   }

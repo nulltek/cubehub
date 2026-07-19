@@ -53,6 +53,8 @@ const loginFormEl = document.querySelector("#loginForm");
 const accountFormEl = document.querySelector("#accountForm");
 const accountDescriptionEl = document.querySelector("#accountDescription");
 const accountMainEventsEl = document.querySelector("#accountMainEvents");
+const accountLanguageEl = document.querySelector("#accountLanguage");
+const logoutButtonEl = document.querySelector("#logoutButton");
 const prGridEl = document.querySelector("#prGrid");
 const reviewsViewEl = document.querySelector("#reviewsView");
 const roomsViewEl = document.querySelector("#roomsView");
@@ -91,9 +93,16 @@ const profilePrsEl = document.querySelector("#profilePrs");
 const storageKey = "cube-timer-solves-v1";
 const settingsKey = "cube-timer-settings-v2";
 const statsCountKey = "cube-timer-stats-count-v1";
+const languageKey = "cubehub-language-v1";
 const scrambleQueueTarget = 5;
 const solveRestartCooldownMs = 2000;
 const underDevelopmentViews = new Set(["reviews", "rooms", "algorithms", "competitions"]);
+const supportedLanguages = {
+  en: {
+    label: "English",
+    strings: {}
+  }
+};
 const statsCountOptions = [3, 5, 12, 25, 50, 100, 200, 300, 500, 1000, 2000];
 const events = [
   { id: "222", label: "2x2" },
@@ -134,6 +143,7 @@ let statsSolveCount = loadStatsSolveCount();
 let account = null;
 let currentView = "home";
 let intendedView = "home";
+let currentLanguage = loadLanguage();
 let activeSolve = null;
 let activeRoomId = null;
 let roomAfkTimerId = null;
@@ -154,6 +164,7 @@ let beepedMarks = new Set();
 
 renderEventSelect();
 renderPrGrid();
+renderLanguageOptions();
 loadServerAccount();
 renderSettings();
 statsSolveCountEl.value = String(statsSolveCount);
@@ -224,6 +235,12 @@ accountFormEl.addEventListener("submit", (event) => {
   };
   saveServerAccount();
 });
+accountLanguageEl.addEventListener("change", () => {
+  currentLanguage = supportedLanguages[accountLanguageEl.value] ? accountLanguageEl.value : "en";
+  localStorage.setItem(languageKey, currentLanguage);
+  applyLanguage();
+});
+logoutButtonEl.addEventListener("click", logout);
 newScrambleEl.addEventListener("click", () => loadScramble());
 closePanelEl.addEventListener("click", () => setPanel(false));
 openPanelEl.addEventListener("click", () => setPanel(true));
@@ -805,6 +822,25 @@ function renderPrGrid() {
   }
 }
 
+function renderLanguageOptions() {
+  accountLanguageEl.innerHTML = "";
+  for (const [code, language] of Object.entries(supportedLanguages)) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = language.label;
+    accountLanguageEl.append(option);
+  }
+  accountLanguageEl.value = currentLanguage;
+  applyLanguage();
+}
+
+function applyLanguage() {
+  currentLanguage = supportedLanguages[currentLanguage] ? currentLanguage : "en";
+  accountLanguageEl.value = currentLanguage;
+  document.documentElement.lang = currentLanguage;
+  document.documentElement.dataset.language = currentLanguage;
+}
+
 function renderAccount() {
   if (!account) return;
   accountDescriptionEl.value = account.description || "";
@@ -812,6 +848,21 @@ function renderAccount() {
   for (const input of prGridEl.querySelectorAll("[data-pr-event]")) {
     input.value = account.prs?.[input.dataset.prEvent] || "";
   }
+}
+
+async function logout() {
+  logoutButtonEl.disabled = true;
+  try {
+    await fetch("/api/logout", { method: "POST" });
+  } catch {
+    // Local UI still logs out when the network request fails.
+  }
+  account = null;
+  roomsSnapshot = [];
+  activeRoomId = null;
+  renderRooms();
+  setView("login");
+  logoutButtonEl.disabled = false;
 }
 
 async function loadServerAccount() {
@@ -1091,6 +1142,11 @@ function loadSettings() {
   } catch {
     return { ...defaultSettings };
   }
+}
+
+function loadLanguage() {
+  const storedLanguage = localStorage.getItem(languageKey) || "en";
+  return supportedLanguages[storedLanguage] ? storedLanguage : "en";
 }
 
 function loadStatsSolveCount() {
