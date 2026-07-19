@@ -484,6 +484,7 @@ function setImagePanel(open) {
   document.body.classList.toggle("image-panel-closed", !open);
   dockImageEl.classList.toggle("is-active", open);
   dockImageEl.setAttribute("aria-pressed", String(open));
+  dockImageEl.setAttribute("aria-label", open ? "Hide scramble image" : "Show scramble image");
 }
 
 function setView(view) {
