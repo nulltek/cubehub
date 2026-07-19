@@ -551,9 +551,9 @@ function renderRollingStats(eventSolves = getEventSolves()) {
     <div><span>${ao12 || "--"}</span><small>ao12</small></div>
     ${projection ? `
       <div class="ao5-projection">
-        <span>${projection.best}</span><small>best next ao5</small>
-        <span>${projection.worst}</span><small>worst next ao5</small>
-        <span>${projection.target}</span><small>need for best</small>
+        <span>${projection.best}</span><small>BPA</small>
+        <span>${projection.worst}</span><small>WPA</small>
+        <span>${projection.target}</span><small>need for BPA</small>
       </div>
     ` : ""}
   `;
