@@ -590,7 +590,7 @@ function renderAccount() {
 
 async function loadServerAccount() {
   try {
-    const response = await fetch("/api/me");
+    const response = await fetch(freshUrl("/api/me"), { cache: "no-store" });
     const payload = await response.json();
     account = payload.user;
     if (account?.username) await loadServerTimerData();
@@ -621,8 +621,8 @@ async function saveServerAccount() {
 async function loadServerTimerData() {
   try {
     const [solvesResponse, settingsResponse] = await Promise.all([
-      fetch("/api/solves"),
-      fetch("/api/timer-settings")
+      fetch(freshUrl("/api/solves"), { cache: "no-store" }),
+      fetch(freshUrl("/api/timer-settings"), { cache: "no-store" })
     ]);
     if (solvesResponse.ok) {
       const payload = await solvesResponse.json();
@@ -665,7 +665,7 @@ function collectPrs() {
 async function renderRooms() {
   if (account?.username) {
     try {
-      const response = await fetch("/api/rooms");
+      const response = await fetch(freshUrl("/api/rooms"), { cache: "no-store" });
       if (response.ok) roomsSnapshot = (await response.json()).rooms || [];
     } catch {
       roomsSnapshot = [];
@@ -704,7 +704,7 @@ async function enterRoom(roomId, event) {
     });
     if (response.status === 401) return setView("login");
     const payload = await response.json();
-    const roomsResponse = await fetch("/api/rooms");
+    const roomsResponse = await fetch(freshUrl("/api/rooms"), { cache: "no-store" });
     if (roomsResponse.ok) roomsSnapshot = (await roomsResponse.json()).rooms || [];
     renderActiveRoom(roomId, event, payload.scramble);
   } catch {
@@ -987,4 +987,9 @@ function isTypingTarget(target) {
 
 function isSmallScreen() {
   return window.matchMedia("(max-width: 820px)").matches;
+}
+
+function freshUrl(path) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}_=${Date.now()}`;
 }
